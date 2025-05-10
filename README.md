@@ -26,7 +26,6 @@ To play Game Zone, you need:
      cd game-zone
      ```
    - Alternatively, download the project as a ZIP file and extract it.
-     ```
 
 
 ## Usage
@@ -52,27 +51,6 @@ To play Game Zone, you need:
      Enter your choice (1-3):
      ```
    - Enter `1`, `2`, or `3` to select an option.
-
-3. **Playing the Games**:
-   - **Number Guessing Game**:
-     - Think of a number between 1 and 50.
-     - The computer guesses a number and asks if it’s correct, higher, or lower (e.g., "Is your number 25? (yes/higher/lower):").
-     - Respond with `yes`, `higher`, or `lower` until the computer guesses your number or reaches the maximum attempts (10).
-     - On success, you’ll see a celebratory message (e.g., "Woohoo! I nailed it!").
-   - **Word Guessing Game**:
-     - Choose a word from the displayed list (e.g., `apple, chair, elephant, guitar, rocket, pencil, pizza, tiger`).
-     - The computer asks up to 5 yes/no/maybe questions (e.g., "Is your word something you can eat?").
-     - Respond with `yes`, `no`, or `maybe`.
-     - The computer guesses a word (up to 2 guesses per attempt) and asks if it’s correct (e.g., "I think your word is: pencil. Was I correct? (yes/no):").
-     - If wrong, it may try another guess or start a new attempt with new questions.
-
-4. **Exiting the Game**:
-   - Select option `3` from the main menu.
-   - The game displays a summary of your play history:
-     ```
-     Great!
-     You have played Number Game X times and Word Game Y times.
-     ```
 
 
 ## Dependencies
