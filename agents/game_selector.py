@@ -1,9 +1,9 @@
 from models.game_state import GameState
 from .base_agent import BaseAgent
+from typing import Optional
 
 class GameSelectorAgent(BaseAgent):
     def run(self, state: GameState) -> GameState:
-        # Handle game completion or initial state
         if state.game_result or state.current_game is None:
             state.current_game = "selecting"
             state.system_message = (
@@ -18,7 +18,6 @@ class GameSelectorAgent(BaseAgent):
             state.game_result = None
             return state
 
-        # Process user input only if in selection mode
         if state.current_game == "selecting" and state.user_input:
             try:
                 choice = state.user_input.strip()
@@ -30,13 +29,15 @@ class GameSelectorAgent(BaseAgent):
                     state.word_game_state = {}
                 elif choice == "3":
                     state.should_continue = False
-                    state.system_message = "Thanks for playing!"
+                    state.system_message = (
+                        f"Great!\n"
+                        f"You have played Number Game {state.number_game_count} times "
+                        f"and Word Game {state.word_game_count} times."
+                    )
                 else:
                     raise ValueError("Invalid choice")
-                
-                state.user_input = None  # Clear input after processing
+                state.user_input = None
             except:
                 state.system_message = "Invalid input. Please enter 1, 2, or 3: "
-                state.needs_input = True  # Request input again
-        
+                state.needs_input = True
         return state
