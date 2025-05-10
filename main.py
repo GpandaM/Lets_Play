@@ -76,6 +76,8 @@ class GameSystem:
                 node_name, current_state_dict = list(event.items())[0]
                 state = GameState(**current_state_dict)
                 
+                # print(state)
+                
                 # Display messages
                 if state.system_message:
                     self.interface.display(state.system_message)
