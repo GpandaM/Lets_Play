@@ -97,3 +97,8 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 - Thanks to the Python community for excellent libraries and resources.
 
 Enjoy playing Game Zone, and have fun outsmarting the computer!
+
+
+
+## ------------------ Phase 2 --------------  ##
+make internal nodes private in subgraph 
