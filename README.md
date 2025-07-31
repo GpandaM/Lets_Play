@@ -71,34 +71,6 @@ pip install -r requirements.txt
 ```
 
 
-## Contributing
-
-Feel free to contribute by:
-- Adding new game modes or features.
-- Improving the user interface (e.g., colored output with `colorama`).
-- Enhancing the AI guessing algorithms.
-- Fixing bugs or improving documentation.
-
-To contribute:
-1. Fork the repository.
-2. Create a branch (`git checkout -b feature-name`).
-3. Commit changes (`git commit -m "Add feature"`).
-4. Push to your fork (`git push origin feature-name`).
-5. Open a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details (if included).
-
-## Acknowledgments
-
-- Built with [LangGraph](https://langchain-ai.github.io/langgraph/) for state management.
-- Inspired by classic guessing games like 20 Questions and Number Guessing.
-- Thanks to the Python community for excellent libraries and resources.
-
-Enjoy playing Game Zone, and have fun outsmarting the computer!
-
-
 
 ## ------------------ Phase 2 --------------  ##
 make internal nodes private in subgraph 
