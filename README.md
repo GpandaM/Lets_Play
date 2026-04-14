@@ -27,6 +27,135 @@ To play Game Zone, you need:
      ```
    - Alternatively, download the project as a ZIP file and extract it.
 
+## Architecture
+
+### System Layers
+
+The system is organized into five layers. Each layer has a single responsibility and communicates only with its immediate neighbors.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Layer 5: Execution Loop (main.py)                   │
+│  Drives the while-loop, converts state ↔ dict,       │
+│  handles display and user input via CLI               │
+├──────────────────────────────────────────────────────┤
+│  Layer 4: Interface (CommandLineInterface)            │
+│  display() and get_input() — the only code that       │
+│  touches stdin/stdout                                 │
+├──────────────────────────────────────────────────────┤
+│  Layer 3: Orchestration (master_workflow)             │
+│  LangGraph StateGraph with conditional edges.         │
+│  Decides which agent runs next by inspecting state.   │
+├──────────────────────────────────────────────────────┤
+│  Layer 2: Agents                                      │
+│  Pure functions: State → State                        │
+│  Menu, Input, Validator, ErrorHandler, Retry,         │
+│  WordGameWrapper, and the Word Game subgraph agents   │
+├──────────────────────────────────────────────────────┤
+│  Layer 1: State                                       │
+│  BaseGameState → GameState → WordGameState            │
+│  Single source of truth. Agents never talk directly   │
+│  to each other — they communicate through state.      │
+└──────────────────────────────────────────────────────┘
+```
+
+### State Hierarchy
+
+State is layered into three tiers. Each tier is visible only to the agents that need it.
+
+```
+BaseGameState (Shared Protocol)
+│   Fields every agent can read/write:
+│   system_message, user_input, needs_input,
+│   game_result, error_message
+│
+├── GameState (Orchestration State)
+│   │   Fields only the orchestrator and wrappers use:
+│   │   current_game, should_continue, input_context,
+│   │   number_game_count, word_game_count
+│   │
+│   └── word_game_state: WordGameState (Domain State)
+│           Fields only the word game agents use:
+│           possible_words, clue_index, clue_answers,
+│           tried_words, guesses_made, max_questions,
+│           max_guesses, current_question, waiting_for_input
+```
+
+
+
+### State Synchronization Between Master and Subgraph
+
+`WordGameWrapper` bridges the two graphs using `StateSynchronizer`. This is the
+consume-once pattern: user input flows down, gets cleared from master, and
+results flow back up.
+
+```
+    MASTER (GameState)                    SUBGRAPH (WordGameState)
+    ┌──────────────────┐                  ┌──────────────────┐
+    │                  │  sync_to_subgraph │                  │
+    │  user_input ─────┼────────────────►  │  user_input      │
+    │  (then cleared)  │                  │  needs_input=F   │
+    │  error_message ──┼────────────────►  │  error_message   │
+    │                  │                  │                  │
+    │                  │ sync_from_subgraph│                  │
+    │  game_result  ◄──┼──────────────────┼─ game_result     │
+    │  error_message◄──┼──────────────────┼─ error_message   │
+    │  word_game_state◄┼──────────────────┼─ (full object)   │
+    │                  │                  │                  │
+    │                  │  handoff (if      │                  │
+    │  needs_input=T ◄─┼─ subgraph needs  │  needs_input=T   │
+    │  system_message◄─┼─ user input)     │  system_message  │
+    │  input_context  ◄┼─────────────────  │                  │
+    │   = "word"       │                  │                  │
+    └──────────────────┘                  └──────────────────┘
+```
+
+### Execution Loop (main.py)
+
+The outer loop in `GameSystem.run()` drives everything. It is the only code that
+interacts with the user and the only code that invokes the LangGraph graph.
+
+```
+┌─► Convert GameState to dict
+│         │
+│         ▼
+│   app.stream(state_dict)
+│         │
+│         ▼
+│   For each event in stream:
+│     - Extract node name + state data
+│     - Display system_message if present
+│         │
+│         ▼
+│   Rebuild GameState from last event dict
+│         │
+│         ▼
+│   If needs_input or word_game waiting:
+│     - CLI get_input()
+│     - Store in state.user_input
+│     - Clear needs_input flag
+│         │
+│         ▼
+│   Check should_continue
+│         │
+└───── (loop back if True)
+```
+
+### Agent Roles
+
+| Agent | Layer | Reads | Writes | Purpose |
+|-------|-------|-------|--------|---------|
+| `MenuAgent` | Master | `current_game` | `system_message`, `needs_input`, `input_context` | Shows menu when no game is active |
+| `InputAgent` | Master | `system_message` | `user_input`, `needs_input` | Prompts and reads user input inside the graph |
+| `InputValidator` | Master | `user_input` | `current_game`, `word_game_state`, `error_message` | Parses menu choice, initializes game state |
+| `ErrorHandler` | Master | `error_message` | clears `error_message`, `current_game`, `needs_input` | Displays error and resets to menu |
+| `RetryDecisionAgent` | Master | `game_result`, `user_input` | `should_continue`, clears `word_game_state` | End-of-game flow: play again or quit |
+| `WordGameWrapper` | Bridge | `GameState` | `GameState` (after sync) | Runs subgraph, syncs state up and down |
+| `ClueAsker` | Subgraph | `clue_index` | `current_question`, `waiting_for_input`, `system_message` | Poses the next yes/no/maybe question |
+| `ClueCollector` | Subgraph | `user_input` | `clue_answers`, `clue_index` | Validates and records the user's clue answer |
+| `FilterAgent` | Subgraph | `clue_answers` | `possible_words` | Narrows the candidate word list |
+| `GuessAgent` | Subgraph | `possible_words` | `game_result`, `guesses_made`, `tried_words` | Makes a guess and checks with the user |
+
 
 ## Usage
 
@@ -86,9 +215,6 @@ To contribute:
 4. Push to your fork (`git push origin feature-name`).
 5. Open a pull request.
 
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details (if included).
 
 ## Acknowledgments
 
